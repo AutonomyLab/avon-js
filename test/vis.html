@@ -1,0 +1,38 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML Basic 1.1//EN" "http://www.w3.org/TR/xhtml-basic/xhtml-basic11.dtd">
+<html >
+
+<head >
+<meta content="text/html" http-equiv="Content-Type" />
+
+<script  type="text/javascript" src="../json_parse.js"></script>
+<script  type="text/javascript" src="../avonlib.js"></script>
+<script  type="text/javascript" src="visualizer.js"></script>
+
+<title>Avon Visualizer</title>
+</head>
+
+<body onload="init()">
+<table>
+<tr>
+<td>
+<p>
+<label>Host:</label>
+<input type="text" id="host" />
+<button type="button" onclick="btnConnect()">connect</button>
+</p>
+<p align="left" id="output">output:</p>
+</td>
+</tr>
+<tr>
+<td>
+<p align="center">
+<canvas  id="canvas" width="700" height="700"></canvas>
+</p>
+</td>
+</tr>
+</table>
+
+</body>
+
+</html>
