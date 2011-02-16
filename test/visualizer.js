@@ -28,12 +28,15 @@
 
 var screenWidth, screenHeight;
 var canvas, ctx;
-var bgColor = "rgba(130,130,130,1)";
+var bgColor = "rgb(100,149,237)";
+//var bgColor = "rgba(130,130,130,1)";
 var rangerColor = "rgb(72,118,255)";
-var beamsColor = "rgba(234,251,197,0.2);"
-var rColor = "rgba(255,140,0,1)";
+var lbeamsColor = "rgba(94,91,197,0.3);" // laser beam color
+var sbeamsColor = "rgba(34,201,17,0.3);" //sonar beam color
 
-var nonrColor = "rgb(30,144,170)"; // color of models without any sensor 
+var rColor = "rgba(255,40,0,1)";
+var nonrColor = "rgba(224,224,255,0.7)";
+//var nonrColor = "rgb(30,144,170)"; // color of models without any sensor 
 var frameTic = 0;
 var simTime = "";
 var scaleFactor = 10;
@@ -233,8 +236,10 @@ function updateData(){
 		entities[i]["PVA"]  = entities[i].getPVA();
 		
 		if(entities[i]["ranger"] != null){
-			for(j=0;j<entities[i]["ranger"].length;j++)
+			for(j=0;j<entities[i]["ranger"].length;j++){
 				entities[i]["ranger"][j].data = entities[i]["ranger"][j].getData(); 
+                entities[i]["ranger"][j].pva = entities[i]["ranger"][j].getPVA(); 
+            }
 		}
 			
 	
@@ -253,8 +258,10 @@ function render(){
 	ctx.lineWidth = 1;
 	
 	ctx.fillRect(0,0,screenWidth,screenHeight);
+    
+    
 	
-	ctx.save();
+    ctx.save();
     // note that all other translates are relative to this
     ctx.translate(vx+screenWidth/2, vy+screenHeight/2);
 
@@ -283,23 +290,24 @@ function render(){
 	for(var i=0; i<entities.length; i++){
 		var model = entities[i];
 		//message(robot["name"] + "<b> Pos: x="+robot["PVA"]["x"]+" y="+robot["PVA"]["y"]+"</b>");
-		message(simTime);
+		//message(simTime);
 		drawRobot(ctx, model);
-		
+        
 	   
 	}
-	
-	ctx.restore();
-	
+    ctx.restore();
+	drawSimTime(ctx);			
+    
+
 }
 
 
 function drawRobot(cntx, model){
 	
-		
+   		
 	rx = model["PVA"]["pva"][0][0]*scaleFactor;
 	ry = model["PVA"]["pva"][0][1]*scaleFactor;
-	ra = model["PVA"]["pva"][0][5]*180/Math.PI;
+	ra = model["PVA"]["pva"][0][5];
 	
 	rwidth = model["geom"]["extent"][0]*scaleFactor;
 	rheight = model["geom"]["extent"][1]*scaleFactor;
@@ -310,8 +318,9 @@ function drawRobot(cntx, model){
 		ctx.fillStyle = nonrColor;
 	
 	cntx.translate(z*rx,-ry*z);
-	cntx.rotate(-1* ra * Math.PI / 180);
-	cntx.fillRect(-z*rwidth/2, -z*rheight/2, z*rwidth, z*rheight);  
+	cntx.rotate(-1* ra );
+	       
+    cntx.fillRect(-z*rwidth/2, -z*rheight/2, z*rwidth, z*rheight);  
 	
 	cntx.strokeRect(-z*rwidth/2, -z*rheight/2, z*rwidth,z* rheight);
 	
@@ -336,25 +345,30 @@ function drawRobot(cntx, model){
 		
 	}
 	
-	// restore for drowing laser
-	//cntx.save();
-	//cntx.rotate(ra * Math.PI / 180);
+    // offset the robot origin
+    cntx.save();
+    ofx = model["geom"]["pose"][0]*scaleFactor;
+	ofy = model["geom"]["pose"][1]*scaleFactor;
+	ofa = model["geom"]["pose"][5];
+    
+	cntx.translate(-z*ofx,ofy*z);
+	cntx.rotate(ofa );
 
+    ////////// DRAW ROBOT SENSORS and ... /////////////
+	
 	if(model.ranger != null){
 		
-		for(i=0;i<model.ranger.length;i++)
-			drawModelRanger(cntx,model.ranger[i]);
-	
+		for(i=0;i<model.ranger.length;i++){
+                
+            	drawModelRanger(cntx,model.ranger[i]);
+        }
 	}
 	
-	/* 
-	if(robot["showranger"])
-		drawRanger(cntx, robot["ranger"]);
-	
-	*/
+    cntx.restore();
+    /////////////////////////////////////////////////
+    
 	cntx.save();
-	cntx.rotate(ra * Math.PI / 180);
-	//if(model["showname"])
+	cntx.rotate(ra );
 	drawRobotName(cntx,model["name"]);
 	cntx.restore();
 	
@@ -367,6 +381,15 @@ function drawModelRanger(cntx, ranger){
 	
 	//Draw the transducers
 	
+	//cntx.translate(z*rx,-ry*z);
+    cntx.save();
+    radx = ranger.geom.pose[0]*scaleFactor;
+	rady = ranger.geom.pose[1]*scaleFactor;
+	rada = ranger.geom.pose[5];
+    cntx.translate(z*radx,-rady*z);
+	cntx.rotate(-1* rada );
+    
+    
 	for(k=0;k<ranger.config.transducer_count;k++){
 		cntx.save();
 		
@@ -374,15 +397,15 @@ function drawModelRanger(cntx, ranger){
 		
 		tx = ranger.data.transducers[k].pose[0]*scaleFactor;
 		ty = ranger.data.transducers[k].pose[1]*scaleFactor;
-		ta = ranger.data.transducers[k].pose[5]*180/Math.PI;
+		ta = ranger.data.transducers[k].pose[5];
 		
-		//twidth = ranger.config.transducers[k].extent[0]*scaleFactor;
-		//theight = ranger.config.transducers[k].extent[1]*scaleFactor;
-		twidth = ranger.geom.extent[0]*scaleFactor;
-		theight = ranger.geom.extent[1]*scaleFactor;
+		twidth = ranger.config.transducers[k]["geom"].extent[0]*scaleFactor;
+		theight = ranger.config.transducers[k]["geom"].extent[1]*scaleFactor;
+		//twidth = ranger.geom.extent[0]*scaleFactor;
+		//theight = ranger.geom.extent[1]*scaleFactor;
 		
 		cntx.translate(z*tx,-ty*z);
-		cntx.rotate(-1* ta * Math.PI / 180);
+		cntx.rotate(-1* ta);
 		cntx.fillRect(-z*twidth/2, -z*theight/2, z*twidth, z*theight);  
 		
 		cntx.strokeRect(-z*twidth/2, -z*theight/2, z*twidth,z* theight);
@@ -392,38 +415,87 @@ function drawModelRanger(cntx, ranger){
 	
 	//Draw the laser beams and ...
 	cntx.save();
-	cntx.fillStyle = beamsColor;//"rgba(100,100,100,0.4)";
+	cntx.fillStyle = lbeamsColor;//"rgba(100,100,100,0.4)";
+    
+    rx1 = ranger["pva"]["pva"][0][0]*scaleFactor;
+	ry1 = ranger["pva"]["pva"][0][1]*scaleFactor;
+	ra1 = ranger["pva"]["pva"][0][5];
+    
+    cntx.translate(z*rx1,-ry1*z);
+	cntx.rotate(-ra1);
+    
 	
 	for(k=0;k<ranger.config.transducer_count;k++){
-			
-		cntx.beginPath();
+		
+        cntx.save();
+        tdx = ranger.data.transducers[k].pose[0]*scaleFactor;
+		tdy = ranger.data.transducers[k].pose[1]*scaleFactor;
+		tda = ranger.data.transducers[k].pose[5];
+
+        cntx.translate(z*tdx, -z*tdy);
+        //cntx.rotate(-1*ranger.config.transducers[k].pose[5] * 180/Math.PI);	
+
+        // chnage the beam color for laser/sonar
+        if(ranger.data.transducers[k].sample_count > 1 ){
+                  cntx.strokeStyle = lbeamsColor;
+        }else{
+                  cntx.fillStyle = sbeamsColor;
+                  cntx.strokeStyle = sbeamsColor;
+                  ranger.data.transducers[k].samples[0][0] += ranger.config.transducers[k]["fov"][0][0];
+                  ranger.data.transducers[k].samples.push(ranger.data.transducers[k].samples[0].clone());
+                                    
+                  ranger.data.transducers[k].samples[1][0] += ranger.config.transducers[k]["fov"][0][1];
+                  ranger.data.transducers[k].sample_count +=1;
+                  
+        }
+
+        cntx.beginPath();
 		cntx.moveTo(0,0);
 		
-		for(i=0;i<ranger.data.transducers[k].sample_count;i++){
+		for(var i=0;i<ranger.data.transducers[k].sample_count;i++){
 			
-			xx = Math.cos(-1*ranger.data.transducers[k].samples[i][0]) * ranger.data.transducers[k].samples[i][2]*scaleFactor;
-			yy = Math.sin(-1*ranger.data.transducers[k].samples[i][0]) * ranger.data.transducers[k].samples[i][2]*scaleFactor;
+			xx = Math.cos(-1*(ranger.data.transducers[k].samples[i][0]+ranger.config.transducers[k]["geom"].pose[5])) * ranger.data.transducers[k].samples[i][2]*scaleFactor;
+			yy = Math.sin(-1*(ranger.data.transducers[k].samples[i][0]+ranger.config.transducers[k]["geom"].pose[5])) * ranger.data.transducers[k].samples[i][2]*scaleFactor;
 						
 			cntx.lineTo(z*xx,z*yy);
-			
+		
+        	
 		}
 		
 		cntx.lineTo(0,0);
+        cntx.stroke();
 		cntx.fill();
-		
+        
+		cntx.restore();
 		
 				
 	}
 	
 	cntx.restore();
 	
+    cntx.restore();
 }
 
+function drawSimTime(cntx){
+    
+    var hour = Math.floor(simTime/3600);
+	var min = Math.floor((simTime - hour*3600)/60);
+	var sec = (simTime - hour*3600 - min*60);
+	timeStr = hour+"h "+min+"m "+sec.toFixed(1)+"s";
+    
+    cntx.save();
+	cntx.translate(5,5);    
+    cntx.fillStyle    = '#fff';
+	cntx.font         = '15px sans-serif';
+	cntx.textBaseline = 'top';
+	cntx.fillText  (timeStr, 0, 0);
+	cntx.restore();
+}
  
 function drawRobotName(cntx, rname){
 	
 	cntx.save();
-	cntx.fillStyle    = '#00f';
+	cntx.fillStyle    = '#fff';
 	cntx.font         = '15px sans-serif';
 	cntx.textBaseline = 'top';
 	cntx.fillText  (rname, 0, 0);
@@ -433,12 +505,12 @@ function drawRobotName(cntx, rname){
 }
 function zoomIn(){
 	
-	z += (z < 20)? 1 :0;
+	z += (z < 20)? .4 :0;
 	
 }
 function zoomOut(){
 	
-	z -= (z > 1.5)? 1 :0;
+	z -= (z > 1.5)? .4 :0;
 	
 }
 
