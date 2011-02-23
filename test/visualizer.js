@@ -82,7 +82,7 @@ function init(){
 	canvas.onmousemove  = mouseViewMove;
 	
 		
-	setInterval(update,100);
+	setInterval(update,50);
 	
 	
 }
@@ -547,28 +547,58 @@ function mouseViewMove(e){
 		
 		if(changeView){
 			
-			if(prex == 0 || prey ==0){
+			if(prex == 0 || prey == 0){
 				
-				prex = e.clientX;
-				prey = e.clientY;
+				prex = e.clientX-canvas.offsetLeft-11;
+				prey = e.clientY-canvas.offsetTop-115;
 				
 				return;
 			}
 			
-			offsetX = prex - e.clientX;
-			offsetY = prey - e.clientY;
+			offsetX = prex - (e.clientX-canvas.offsetLeft-11);
+			offsetY = prey - (e.clientY-canvas.offsetTop-115);
 			
 			vx -= offsetX;
 			vy -= offsetY;
 		}
 		
-		prex = e.clientX;
-		prey = e.clientY;
-		
+		prex = e.clientX-canvas.offsetLeft-11;
+		prey = e.clientY-canvas.offsetTop-115;
+		//message("<br>prex= "+(prex-vx-screenWidth/2)/(z*scaleFactor)+"<br>"+"prey= "+(-prey+vy+screenHeight/2)/(z*scaleFactor));
 }
 
 function mouseViewDown(){
-	changeView = true;
+	
+    var mx=(prex-vx-screenWidth/2)/(z*scaleFactor);
+    var my=(-prey+vy+screenHeight/2)/(z*scaleFactor);
+    var selectedModel;
+    //check if the user has selected a robot
+    for(var ii=0;ii<entities.length;ii++){
+
+        var model = entities[ii];
+            
+        if(model["children"].length < 1)
+            continue;
+    
+        var rx = model["PVA"]["pva"][0][0];
+        var ry = model["PVA"]["pva"][0][1];
+        var rwidth = model["geom"]["extent"][0]
+        //var rwidth = model["geom"]["extent"][0]
+        message("<br>"+model["name"]+" "+ Math.sqrt(Math.pow(mx-rx,2)+Math.pow(my-ry,2)));
+        if(Math.sqrt(Math.pow(mx-rx,2)+Math.pow(my-ry,2)) < rwidth){
+            
+            selectedModel = model;
+            break;
+        }
+    }
+    //message("<br>prex= "+mx+"<br>"+"prey= "+my);
+    if(selectedModel != null){
+        message("selectedModel = "+selectedModel["name"] );
+    }else{
+        message("" );
+        changeView = true;
+        }
+    
 }
 
 function mouseViewUp(){
